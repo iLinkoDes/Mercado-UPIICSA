@@ -1,6 +1,6 @@
 package com.iianriverk.mercadoupiicsa.models
 
-open class AlumnoModel(
+open class Alumno(
     val idAlumno : String,
     val nombreCompleto : String,
     val correo : String,
@@ -11,7 +11,7 @@ open class AlumnoModel(
 
 }
 
-class vendedorModel (
+class Vendedor(
     idAlumno: String,
     nombreCompleto: String,
     correo: String,
@@ -24,7 +24,7 @@ class vendedorModel (
     val fotoNegocioUrl : String,
     val descripcionNegocio : String,
     val tipoNegocio : TipoNegocio,
-) : AlumnoModel(idAlumno, nombreCompleto, correo, telefono, fotoPerfilUrl, rol){
+) : Alumno(idAlumno, nombreCompleto, correo, telefono, fotoPerfilUrl, rol){
 
 }
 
