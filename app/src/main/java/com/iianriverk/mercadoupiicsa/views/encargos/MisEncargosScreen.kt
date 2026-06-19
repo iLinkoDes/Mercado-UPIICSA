@@ -126,15 +126,16 @@ fun MisEncargosScreen(
                             key   = { it.idEncargo }
                         ) { encargo ->
                             EncargoCard(
-                                encargo     = encargo,
-                                esVendedor  = uiState.rolUsuario == RolUsuario.VENDEDOR,
-                                onConfirmar = {
+                                encargo            = encargo,
+                                esVendedor         = uiState.rolUsuario == RolUsuario.VENDEDOR,
+                                tienesMensajeNuevo = encargo.idEncargo in uiState.encargosConMensaje, // ← nuevo
+                                onConfirmar        = {
                                     viewModel.actualizarEstado(encargo.idEncargo, EstadoEncargo.CONFIRMADO)
                                 },
-                                onRechazar  = {
+                                onRechazar         = {
                                     viewModel.actualizarEstado(encargo.idEncargo, EstadoEncargo.RECHAZADO)
                                 },
-                                onChat      = {
+                                onChat             = {
                                     navController.navigate(
                                         Screen.Chat.createRoute(
                                             idEncargo      = encargo.idEncargo,
@@ -159,6 +160,7 @@ fun MisEncargosScreen(
 private fun EncargoCard(
     encargo:     Encargo,
     esVendedor:  Boolean,
+    tienesMensajeNuevo: Boolean,
     onConfirmar: () -> Unit,
     onRechazar:  () -> Unit,
     onChat: () -> Unit
@@ -203,18 +205,32 @@ private fun EncargoCard(
                     style    = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.weight(1f)
                 )
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = containerColor
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment     = Alignment.CenterVertically
                 ) {
-                    Text(
-                        estadoLabel,
-                        style    = MaterialTheme.typography.labelSmall,
-                        color    = labelColor,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
+                    // Badge de mensaje nuevo
+                    if (tienesMensajeNuevo) {
+                        Badge {
+                            Text("1")
+                        }
+                    }
+                    // Estado del encargo
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = containerColor
+                    ) {
+                        Text(
+                            estadoLabel,
+                            style    = MaterialTheme.typography.labelSmall,
+                            color    = labelColor,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
+
 
             Spacer(Modifier.height(8.dp))
 

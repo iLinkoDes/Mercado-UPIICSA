@@ -28,7 +28,8 @@ data class MisEncargosUiState(
     val todosLosEncargos: List<Encargo> = emptyList(),
     val encargos:   List<Encargo>   = emptyList(),
     val rolUsuario: RolUsuario      = RolUsuario.ALUMNO,
-    val filtroActivo:     EstadoEncargo? = null
+    val filtroActivo:     EstadoEncargo? = null,
+    val encargosConMensaje:  Set<String>     = emptySet()
 )
 
 class EncargosViewModel : ViewModel() {
@@ -101,6 +102,15 @@ class EncargosViewModel : ViewModel() {
         val uid = auth.currentUser?.uid ?: return
         viewModelScope.launch {
             _listaState.update { it.copy(isLoading = true, error = null) }
+
+            // Escucha notificaciones en paralelo
+            launch {
+                chatRepository.getEncargosConNotificacion(uid)
+                    .catch { }
+                    .collect { ids ->
+                        _listaState.update { it.copy(encargosConMensaje = ids) }
+                    }
+            }
 
             // Obtiene el rol del usuario desde Firestore
             val rol = try {

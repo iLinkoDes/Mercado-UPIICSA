@@ -84,4 +84,19 @@ class ChatRepository {
         database.getReference("notifications/$userId/$idEncargo")
             .removeValue().await()
     }
+
+    fun getEncargosConNotificacion(userId: String): Flow<Set<String>> = callbackFlow {
+        val ref = database.getReference("notifications/$userId")
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val ids = snapshot.children.mapNotNull { it.key }.toSet()
+                trySend(ids)
+            }
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        ref.addValueEventListener(listener)
+        awaitClose { ref.removeEventListener(listener) }
+    }
 }
