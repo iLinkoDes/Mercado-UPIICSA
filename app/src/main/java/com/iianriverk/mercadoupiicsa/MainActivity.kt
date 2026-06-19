@@ -4,44 +4,24 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import com.iianriverk.mercadoupiicsa.navigation.AppNavigation
+import com.iianriverk.mercadoupiicsa.navigation.Screen
 import com.iianriverk.mercadoupiicsa.ui.theme.MercadoUPIICSATheme
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.iianriverk.mercadoupiicsa.viewModels.AuthViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MercadoUPIICSATheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+            MercadoUPIICSATheme(dynamicColor = false) {
+                val authViewModel: AuthViewModel = viewModel()
+                // Si hay sesion, avanza automaticamente al Feed
+                val start = if (authViewModel.isLoggedIn()) Screen.Feed.route
+                else Screen.Login.route
+                AppNavigation(startDestination = start)
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MercadoUPIICSATheme {
-        Greeting("Android")
     }
 }

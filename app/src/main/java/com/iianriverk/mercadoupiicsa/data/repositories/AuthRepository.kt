@@ -1,70 +1,79 @@
 package com.iianriverk.mercadoupiicsa.data.repositories
 
 import android.util.Log
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewModelScope
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.firestore
-import com.iianriverk.mercadoupiicsa.models.Alumno
 import com.iianriverk.mercadoupiicsa.models.RolUsuario
-import kotlinx.coroutines.launch
+import com.iianriverk.mercadoupiicsa.models.TipoNegocio
 import kotlinx.coroutines.tasks.await
 
-class AuthRepository{
-    private val auth : FirebaseAuth = Firebase.auth
-    private val firestore : FirebaseFirestore = Firebase.firestore
+class AuthRepository {
+    private val auth: FirebaseAuth = Firebase.auth
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 
     suspend fun login(email: String, password: String): Result<Unit> {
         return try {
             auth.signInWithEmailAndPassword(email, password).await()
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.d("ERROR EN LOGIN", "${e.localizedMessage}")
+            Log.e("AUTH_REPO", "login: ${e.localizedMessage}")
             Result.failure(e)
         }
     }
 
-    suspend fun createUser(email: String, password: String, username: String): Result<Unit>{
-        return  try {
-            auth.createUserWithEmailAndPassword(email,password).await()
+    suspend fun createUser(email: String, password: String): Result<Unit> {
+        return try {
+            auth.createUserWithEmailAndPassword(email, password).await()
             Result.success(Unit)
-        } catch (e: Exception){
-            Log.d("ERROR EN REGISTRO", "${e.localizedMessage}")
+        } catch (e: Exception) {
+            Log.e("AUTH_REPO", "createUser: ${e.localizedMessage}")
             Result.failure(e)
         }
     }
 
-    fun saveUser(username: String, nombre: String, telefono: String, fotoPerfilUrl: String?, rol: RolUsuario): Result<Unit>{
-        val id = auth.currentUser?.uid.orEmpty()
-        val nombreCompleto = nombre
+    suspend fun saveUser(
+        nombreCompleto: String,
+        boleta: String,
+        telefono: String,
+        fotoPerfilUrl: String = "",
+        rol: RolUsuario,
+        nombreNegocio: String = "",
+        descripcionNegocio: String = "",
+        tipoNegocio: TipoNegocio = TipoNegocio.OTROS
+    ): Result<Unit> {
+        val uid = auth.currentUser?.uid
+            ?: return Result.failure(Exception("Usuario no autenticado"))
         val email = auth.currentUser?.email.orEmpty()
-        val telefono = telefono
-        val fotoPerfilUrl = fotoPerfilUrl.orEmpty()
-        val rol = rol
 
-        val user = Alumno(
-            idAlumno = id,
-            nombreCompleto = nombreCompleto,
-            correo = email,
-            telefono = telefono,
-            fotoPerfilUrl = fotoPerfilUrl,
-            rol = rol
-
+        val data = mutableMapOf<String, Any>(
+            "idAlumno"       to uid,
+            "nombreCompleto" to nombreCompleto,
+            "boleta"         to boleta,
+            "correo"         to email,
+            "telefono"       to telefono,
+            "fotoPerfilUrl"  to fotoPerfilUrl,
+            "rol"            to rol.name
         )
 
-        return try {
-            FirebaseFirestore.getInstance().collection("Usuarios")
-                .add(user)
-            Result.success(Unit)
-        } catch (e: Exception){
-            Result.failure(e)
+        if (rol == RolUsuario.VENDEDOR) {
+            data["nombreNegocio"]     = nombreNegocio
+            data["descripcionNegocio"] = descripcionNegocio
+            data["tipoNegocio"]       = tipoNegocio.name
+            data["fotoNegocioUrl"]    = ""
         }
 
-
-
-
+        return try {
+            firestore.collection("Usuarios").document(uid).set(data).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("AUTH_REPO", "saveUser: ${e.localizedMessage}")
+            Result.failure(e)
+        }
     }
+
+    fun getCurrentUserId(): String? = auth.currentUser?.uid
+    fun isLoggedIn(): Boolean = auth.currentUser != null
+    fun logout() = auth.signOut()
 }
