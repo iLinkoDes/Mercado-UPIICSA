@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -5,6 +7,15 @@ plugins {
 
     kotlin("plugin.serialization") version "2.3.20"
 }
+
+// Secretos fuera de control de versiones: se leen de local.properties (gitignored).
+// Si no están definidos, se usa "" para que el proyecto compile (el login de
+// Facebook simplemente no funcionará hasta proveer los valores reales).
+val localProps = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+fun secret(key: String): String = localProps.getProperty(key) ?: ""
 
 android {
     namespace = "com.iianriverk.mercadoupiicsa"
@@ -22,6 +33,13 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Credenciales de Facebook inyectadas como recursos string en tiempo de
+        // build (el manifest las referencia como @string/...).
+        val facebookAppId = secret("FACEBOOK_APP_ID")
+        resValue("string", "facebook_app_id", facebookAppId)
+        resValue("string", "facebook_client_token", secret("FACEBOOK_CLIENT_TOKEN"))
+        resValue("string", "fb_login_protocol_scheme", "fb$facebookAppId")
     }
 
     buildTypes {
@@ -39,6 +57,7 @@ android {
     }
     buildFeatures {
         compose = true
+        resValues = true
     }
 }
 

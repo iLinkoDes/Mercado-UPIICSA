@@ -73,13 +73,14 @@ class EncargosViewModel : ViewModel() {
             _hacerState.update { it.copy(isLoading = true, error = null) }
 
             val encargo = Encargo(
-                idVendedor     = idVendedor,
-                idAlumno       = idAlumno,
-                nombreProducto = producto.nombreProducto,
-                precioUnitario = producto.precioProducto,
-                cantidad       = cantidad,
-                total          = producto.precioProducto * cantidad,
-                notas          = notas.trim()
+                idVendedor      = idVendedor,
+                idAlumno        = idAlumno,
+                nombreProducto  = producto.nombreProducto,
+                fotoProductoUrl = producto.fotoProductoUrl,
+                precioUnitario  = producto.precioProducto,
+                cantidad        = cantidad,
+                total           = producto.precioProducto * cantidad,
+                notas           = notas.trim()
             )
 
             val result = encargosRepo.crearEncargo(encargo)

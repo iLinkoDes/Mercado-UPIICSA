@@ -1,39 +1,52 @@
 package com.iianriverk.mercadoupiicsa.views.vendedor
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.iianriverk.mercadoupiicsa.viewModels.ProductoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CrearEditarProductoScreen(
-    idProducto: String?,   // null = nuevo producto
+    idProducto: String?,
     navController: NavController,
     viewModel: ProductoViewModel = viewModel()
 ) {
-    val uiState   by viewModel.uiState.collectAsState()
-    val modoEditar = idProducto != null
+    val uiState    by viewModel.uiState.collectAsState()
+    val modoEditar  = idProducto != null
     var confirmEliminar by remember { mutableStateOf(false) }
 
-    // Campos del formulario
     var nombre      by remember { mutableStateOf("") }
     var precio      by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var disponible  by remember { mutableStateOf(true) }
 
-    // Si es modo editar, carga el producto y pre-llena los campos
+    val imagePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri -> viewModel.setImageUri(uri) }
+
     LaunchedEffect(idProducto) {
         if (idProducto != null) viewModel.cargarProducto(idProducto)
     }
@@ -45,8 +58,6 @@ fun CrearEditarProductoScreen(
             disponible  = p.estadoProducto
         }
     }
-
-    // Regresa al catálogo cuando guarda o elimina con éxito
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             navController.navigateUp()
@@ -76,6 +87,69 @@ fun CrearEditarProductoScreen(
         ) {
             Spacer(Modifier.height(16.dp))
 
+            // ── Imagen del producto ────────────────────────
+            val imageModel: Any? = uiState.imageUri
+                ?: uiState.productoEditando?.fotoProductoUrl?.takeIf { it.isNotBlank() }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable {
+                        imagePicker.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                if (imageModel != null) {
+                    AsyncImage(
+                        model             = imageModel,
+                        contentDescription = "Foto del producto",
+                        contentScale      = ContentScale.Crop,
+                        modifier          = Modifier.fillMaxSize()
+                    )
+                    // Overlay para indicar que se puede cambiar
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.25f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.AddPhotoAlternate,
+                            contentDescription = null,
+                            tint     = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Default.AddPhotoAlternate,
+                            contentDescription = null,
+                            tint     = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Toca para agregar imagen",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
             OutlinedTextField(
                 value         = nombre,
                 onValueChange = { nombre = it },
@@ -87,13 +161,13 @@ fun CrearEditarProductoScreen(
             Spacer(Modifier.height(12.dp))
 
             OutlinedTextField(
-                value         = precio,
-                onValueChange = { precio = it },
-                label         = { Text("Precio (MXN)") },
-                singleLine    = true,
+                value           = precio,
+                onValueChange   = { precio = it },
+                label           = { Text("Precio (MXN)") },
+                singleLine      = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                prefix        = { Text("$") },
-                modifier      = Modifier.fillMaxWidth()
+                prefix          = { Text("$") },
+                modifier        = Modifier.fillMaxWidth()
             )
 
             Spacer(Modifier.height(12.dp))
@@ -108,7 +182,6 @@ fun CrearEditarProductoScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Toggle disponible
             Row(
                 modifier          = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -123,10 +196,7 @@ fun CrearEditarProductoScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Switch(
-                    checked         = disponible,
-                    onCheckedChange = { disponible = it }
-                )
+                Switch(checked = disponible, onCheckedChange = { disponible = it })
             }
 
             Spacer(Modifier.height(24.dp))
@@ -154,7 +224,9 @@ fun CrearEditarProductoScreen(
                     )
                 },
                 enabled  = !uiState.isLoading && nombre.isNotBlank() && precioValido,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
                 shape    = MaterialTheme.shapes.extraLarge
             ) {
                 if (uiState.isLoading) {
@@ -168,13 +240,14 @@ fun CrearEditarProductoScreen(
                 }
             }
 
-            // Botón eliminar solo en modo edición
             if (modoEditar) {
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(
                     onClick  = { confirmEliminar = true },
                     enabled  = !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
                     shape    = MaterialTheme.shapes.extraLarge,
                     colors   = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
@@ -188,28 +261,20 @@ fun CrearEditarProductoScreen(
         }
     }
 
-    // Diálogo de confirmación para eliminar
     if (confirmEliminar && idProducto != null) {
         AlertDialog(
             onDismissRequest = { confirmEliminar = false },
             title            = { Text("¿Eliminar producto?") },
-            text             = { Text("Esta acción no se puede deshacer.") },
+            text             = { Text("Se eliminará el producto y su imagen. Esta acción no se puede deshacer.") },
             confirmButton    = {
                 TextButton(
                     onClick = {
                         confirmEliminar = false
-                        viewModel.guardar(
-                            idProducto  = idProducto,
-                            nombre      = nombre,
-                            precio      = precio.toDoubleOrNull() ?: 0.0,
-                            descripcion = descripcion,
-                            disponible  = false
-                        )
-                        // Usamos un método dedicado en el ViewModel
+                        viewModel.eliminar(idProducto)
                     }
                 ) { Text("Eliminar", color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton    = {
+            dismissButton = {
                 TextButton(onClick = { confirmEliminar = false }) { Text("Cancelar") }
             }
         )

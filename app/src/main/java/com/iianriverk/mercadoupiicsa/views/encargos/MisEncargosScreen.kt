@@ -1,5 +1,6 @@
 package com.iianriverk.mercadoupiicsa.views.encargos
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -7,7 +8,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +27,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.ui.text.font.FontWeight
 import com.iianriverk.mercadoupiicsa.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -196,10 +202,35 @@ private fun EncargoCard(
         Column(modifier = Modifier.padding(16.dp)) {
 
             Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                modifier          = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Thumbnail del producto
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (encargo.fotoProductoUrl.isNotBlank()) {
+                        AsyncImage(
+                            model              = encargo.fotoProductoUrl,
+                            contentDescription = null,
+                            contentScale       = ContentScale.Crop,
+                            modifier           = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Store,
+                            contentDescription = null,
+                            tint     = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
                 Text(
                     encargo.nombreProducto,
                     style    = MaterialTheme.typography.titleSmall,
@@ -210,13 +241,9 @@ private fun EncargoCard(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment     = Alignment.CenterVertically
                 ) {
-                    // Badge de mensaje nuevo
                     if (tienesMensajeNuevo) {
-                        Badge {
-                            Text("1")
-                        }
+                        Badge { Text("1") }
                     }
-                    // Estado del encargo
                     Surface(
                         shape = RoundedCornerShape(50),
                         color = containerColor
@@ -252,9 +279,10 @@ private fun EncargoCard(
                     shape    = RoundedCornerShape(6.dp)
                 ) {
                     Text(
-                        "📝 ${encargo.notas}",
+                        "Notas: ${encargo.notas}",
                         style    = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(8.dp)
+                        modifier = Modifier.padding(8.dp),
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }

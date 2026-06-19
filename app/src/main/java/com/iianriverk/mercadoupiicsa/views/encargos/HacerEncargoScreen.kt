@@ -1,13 +1,19 @@
 package com.iianriverk.mercadoupiicsa.views.encargos
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -87,6 +93,17 @@ fun HacerEncargoScreen(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                         )
                     ) {
+                        if (producto.fotoProductoUrl.isNotBlank()) {
+                            AsyncImage(
+                                model              = producto.fotoProductoUrl,
+                                contentDescription = null,
+                                contentScale       = ContentScale.Crop,
+                                modifier           = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp)
+                                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                            )
+                        }
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 producto.nombreProducto,

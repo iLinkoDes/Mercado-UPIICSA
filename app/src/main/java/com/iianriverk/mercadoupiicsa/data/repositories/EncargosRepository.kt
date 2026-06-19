@@ -74,18 +74,19 @@ class EncargosRepository {
         try {
             val data = doc.data ?: return@mapNotNull null
             Encargo(
-                idEncargo      = doc.id,
-                idVendedor     = data["idVendedor"]     as? String ?: "",
-                idAlumno       = data["idAlumno"]       as? String ?: "",
-                nombreProducto = data["nombreProducto"] as? String ?: "",
-                precioUnitario = (data["precioUnitario"] as? Number)?.toDouble() ?: 0.0,
-                cantidad       = (data["cantidad"]       as? Number)?.toInt()    ?: 1,
-                total          = (data["total"]          as? Number)?.toDouble() ?: 0.0,
-                notas          = data["notas"]           as? String ?: "",
-                estado         = EstadoEncargo.valueOf(
+                idEncargo       = doc.id,
+                idVendedor      = data["idVendedor"]      as? String ?: "",
+                idAlumno        = data["idAlumno"]        as? String ?: "",
+                nombreProducto  = data["nombreProducto"]  as? String ?: "",
+                fotoProductoUrl = data["fotoProductoUrl"] as? String ?: "",
+                precioUnitario  = (data["precioUnitario"] as? Number)?.toDouble() ?: 0.0,
+                cantidad        = (data["cantidad"]        as? Number)?.toInt()    ?: 1,
+                total           = (data["total"]           as? Number)?.toDouble() ?: 0.0,
+                notas           = data["notas"]            as? String ?: "",
+                estado          = EstadoEncargo.valueOf(
                     data["estado"] as? String ?: EstadoEncargo.PENDIENTE.name
                 ),
-                fechaCreacion  = (data["fechaCreacion"]  as? Number)?.toLong()   ?: 0L
+                fechaCreacion   = (data["fechaCreacion"]  as? Number)?.toLong()   ?: 0L
             )
         } catch (e: Exception) {
             Log.e("ENCARGO_REPO", "mapeo: ${e.localizedMessage}")
@@ -94,14 +95,15 @@ class EncargosRepository {
     }
 
     private fun Encargo.toMap() = mapOf(
-        "idVendedor"     to idVendedor,
-        "idAlumno"       to idAlumno,
-        "nombreProducto" to nombreProducto,
-        "precioUnitario" to precioUnitario,
-        "cantidad"       to cantidad,
-        "total"          to total,
-        "notas"          to notas,
-        "estado"         to estado.name,
-        "fechaCreacion"  to System.currentTimeMillis()
+        "idVendedor"      to idVendedor,
+        "idAlumno"        to idAlumno,
+        "nombreProducto"  to nombreProducto,
+        "fotoProductoUrl" to fotoProductoUrl,
+        "precioUnitario"  to precioUnitario,
+        "cantidad"        to cantidad,
+        "total"           to total,
+        "notas"           to notas,
+        "estado"          to estado.name,
+        "fechaCreacion"   to System.currentTimeMillis()
     )
 }

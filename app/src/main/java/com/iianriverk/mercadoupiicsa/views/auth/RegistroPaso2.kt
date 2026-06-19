@@ -28,7 +28,7 @@ fun RegistroPaso2Screen(
     val form by viewModel.registerForm.collectAsState()
     val isVendedor = form.rol == RolUsuario.VENDEDOR
 
-    var nombreCompleto by remember { mutableStateOf("") }
+    //var nombreCompleto by remember { mutableStateOf("") }
     var boleta by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
 
@@ -37,6 +37,10 @@ fun RegistroPaso2Screen(
     var descripcionNegocio by remember { mutableStateOf("") }
     var tipoNegocioSeleccionado by remember { mutableStateOf(TipoNegocio.OTROS) }
     var dropdownExpanded by remember { mutableStateOf(false) }
+
+    var nombreCompleto by remember(form.nombrePrefill) {
+        mutableStateOf(form.nombrePrefill)
+    }
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {

@@ -2,7 +2,9 @@ package com.iianriverk.mercadoupiicsa.data.repositories
 
 import android.util.Log
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.iianriverk.mercadoupiicsa.models.RolUsuario
@@ -72,6 +74,45 @@ class AuthRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun signInWithGoogle(idToken: String): Result<Boolean> {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val result     = auth.signInWithCredential(credential).await()
+            val esNuevo    = result.additionalUserInfo?.isNewUser ?: false
+            if (!esNuevo) {
+                // Usuario existente: verifica que tenga perfil en Firestore
+                val doc = firestore.collection("Usuarios")
+                    .document(auth.currentUser!!.uid).get().await()
+                Result.success(!doc.exists())
+            } else {
+                Result.success(true) // nuevo, necesita completar perfil
+            }
+        } catch (e: Exception) {
+            Log.e("AUTH_REPO", "signInWithGoogle: ${e.localizedMessage}")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun signInWithFacebook(token: com.facebook.AccessToken): Result<Boolean> {
+        return try {
+            val credential = FacebookAuthProvider.getCredential(token.token)
+            val result     = auth.signInWithCredential(credential).await()
+            val esNuevo    = result.additionalUserInfo?.isNewUser ?: false
+            if (!esNuevo) {
+                val doc = firestore.collection("Usuarios")
+                    .document(auth.currentUser!!.uid).get().await()
+                Result.success(!doc.exists())
+            } else {
+                Result.success(true)
+            }
+        } catch (e: Exception) {
+            Log.e("AUTH_REPO", "signInWithFacebook: ${e.localizedMessage}")
+            Result.failure(e)
+        }
+    }
+
+    fun getCurrentUser() = auth.currentUser
 
     fun getCurrentUserId(): String? = auth.currentUser?.uid
     fun isLoggedIn(): Boolean = auth.currentUser != null

@@ -61,9 +61,11 @@ class PerfilRepository {
     suspend fun actualizarPerfil(
         nombreCompleto:     String,
         telefono:           String,
+        fotoPerfilUrl:      String? = null,
         nombreNegocio:      String = "",
         descripcionNegocio: String = "",
-        tipoNegocio:        TipoNegocio = TipoNegocio.OTROS
+        tipoNegocio:        TipoNegocio = TipoNegocio.OTROS,
+        fotoNegocioUrl:     String? = null
     ): Result<Unit> {
         val uid = auth.currentUser?.uid
             ?: return Result.failure(Exception("No hay sesión activa"))
@@ -72,11 +74,12 @@ class PerfilRepository {
                 "nombreCompleto" to nombreCompleto,
                 "telefono"       to telefono
             )
-            // Solo actualiza campos de negocio si es vendedor
+            if (fotoPerfilUrl != null) campos["fotoPerfilUrl"] = fotoPerfilUrl
             if (nombreNegocio.isNotBlank()) {
                 campos["nombreNegocio"]      = nombreNegocio
                 campos["descripcionNegocio"] = descripcionNegocio
                 campos["tipoNegocio"]        = tipoNegocio.name
+                if (fotoNegocioUrl != null) campos["fotoNegocioUrl"] = fotoNegocioUrl
             }
             firestore.collection("Usuarios").document(uid).update(campos).await()
             Result.success(Unit)

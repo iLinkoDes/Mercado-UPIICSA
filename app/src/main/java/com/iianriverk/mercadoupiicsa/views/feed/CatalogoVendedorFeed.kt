@@ -1,5 +1,6 @@
 package com.iianriverk.mercadoupiicsa.views.feed
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,6 +10,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -99,6 +103,7 @@ fun CatalogoVendedorScreen(
                             tipoNegocio        = uiState.vendedor?.tipoNegocio?.name
                                 ?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "",
                             descripcionNegocio = uiState.vendedor?.descripcionNegocio ?: "",
+                            fotoNegocioUrl     = uiState.vendedor?.fotoNegocioUrl ?: "",
                             totalProductos     = uiState.productos.size
                         )
                     }
@@ -143,10 +148,11 @@ fun CatalogoVendedorScreen(
 
 @Composable
 private fun VendedorHeader(
-    nombreNegocio: String,
-    tipoNegocio: String,
+    nombreNegocio:      String,
+    tipoNegocio:        String,
     descripcionNegocio: String,
-    totalProductos: Int
+    fotoNegocioUrl:     String,
+    totalProductos:     Int
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -160,16 +166,25 @@ private fun VendedorHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Surface(
-                modifier = Modifier.size(56.dp),
-                shape    = RoundedCornerShape(8.dp),
-                color    = MaterialTheme.colorScheme.primary
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                if (fotoNegocioUrl.isNotBlank()) {
+                    AsyncImage(
+                        model              = fotoNegocioUrl,
+                        contentDescription = null,
+                        contentScale       = ContentScale.Crop,
+                        modifier           = Modifier.fillMaxSize()
+                    )
+                } else {
                     Icon(
                         Icons.Default.Store,
                         contentDescription = null,
-                        tint   = MaterialTheme.colorScheme.onPrimary,
+                        tint     = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -212,33 +227,43 @@ private fun ProductoCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column {
-            // Foto del producto (placeholder)
-            Surface(
-                modifier = Modifier.fillMaxWidth().height(100.dp),
-                color    = MaterialTheme.colorScheme.surfaceVariant,
-                shape    = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+            // Foto del producto
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                if (producto.fotoProductoUrl.isNotBlank()) {
+                    AsyncImage(
+                        model              = producto.fotoProductoUrl,
+                        contentDescription = null,
+                        contentScale       = ContentScale.Crop,
+                        modifier           = Modifier.fillMaxSize()
+                    )
+                } else {
                     Icon(
                         Icons.Default.Store,
                         contentDescription = null,
                         modifier = Modifier.size(32.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint     = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    // Badge "No disponible" solo visible para el vendedor
-                    if (esPropioVendedor && !producto.estadoProducto) {
-                        Surface(
-                            modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
-                            shape    = RoundedCornerShape(4.dp),
-                            color    = MaterialTheme.colorScheme.errorContainer
-                        ) {
-                            Text(
-                                "No disponible",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                            )
-                        }
+                }
+                // Badge "No disponible" solo visible para el vendedor
+                if (esPropioVendedor && !producto.estadoProducto) {
+                    Surface(
+                        modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
+                        shape    = RoundedCornerShape(4.dp),
+                        color    = MaterialTheme.colorScheme.errorContainer
+                    ) {
+                        Text(
+                            "No disponible",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
                     }
                 }
             }

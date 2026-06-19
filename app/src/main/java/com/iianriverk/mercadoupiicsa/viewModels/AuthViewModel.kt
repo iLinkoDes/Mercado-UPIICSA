@@ -14,14 +14,17 @@ import kotlinx.coroutines.launch
 data class AuthUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isSuccess: Boolean = false
+    val isSuccess: Boolean = false,
+    val needsProfile: Boolean = false
 )
 
 // Estado del formulario de registro (Registro y Pre)
 data class RegisterFormState(
     val email: String = "",
     val password: String = "",
-    val rol: RolUsuario = RolUsuario.ALUMNO
+    val rol: RolUsuario = RolUsuario.ALUMNO,
+    val isOAuth:       Boolean    = false,  // vino de Google/Facebook
+    val nombrePrefill: String     = ""
 )
 
 class AuthViewModel : ViewModel() {
@@ -63,12 +66,16 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.update { AuthUiState(isLoading = true) }
 
-            val createResult = repository.createUser(form.email, form.password)
-            if (createResult.isFailure) {
-                _uiState.update {
-                    AuthUiState(error = createResult.exceptionOrNull()?.localizedMessage ?: "Error al crear cuenta")
+            // En OAuth (Google/Facebook) la cuenta ya existe en Firebase Auth,
+            // solo falta guardar el perfil en Firestore.
+            if (!form.isOAuth) {
+                val createResult = repository.createUser(form.email, form.password)
+                if (createResult.isFailure) {
+                    _uiState.update {
+                        AuthUiState(error = createResult.exceptionOrNull()?.localizedMessage ?: "Error al crear cuenta")
+                    }
+                    return@launch
                 }
-                return@launch
             }
 
             val saveResult = repository.saveUser(
@@ -86,6 +93,64 @@ class AuthViewModel : ViewModel() {
                 else AuthUiState(error = saveResult.exceptionOrNull()?.localizedMessage ?: "Error al guardar datos")
             }
         }
+    }
+
+    fun signInWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            _uiState.update { AuthUiState(isLoading = true) }
+            val result = repository.signInWithGoogle(idToken)
+            result.fold(
+                onSuccess = { needsProfile ->
+                    if (needsProfile) {
+                        val user = repository.getCurrentUser()
+                        _registerForm.update {
+                            it.copy(
+                                email         = user?.email ?: "",
+                                isOAuth       = true,
+                                nombrePrefill = user?.displayName ?: ""
+                            )
+                        }
+                        _uiState.update { AuthUiState(needsProfile = true) }
+                    } else {
+                        _uiState.update { AuthUiState(isSuccess = true) }
+                    }
+                },
+                onFailure = { e ->
+                    _uiState.update { AuthUiState(error = e.localizedMessage ?: "Error con Google") }
+                }
+            )
+        }
+    }
+
+    fun signInWithFacebook(token: com.facebook.AccessToken) {
+        viewModelScope.launch {
+            _uiState.update { AuthUiState(isLoading = true) }
+            val result = repository.signInWithFacebook(token)
+            result.fold(
+                onSuccess = { needsProfile ->
+                    if (needsProfile) {
+                        val user = repository.getCurrentUser()
+                        _registerForm.update {
+                            it.copy(
+                                email         = user?.email ?: "",
+                                isOAuth       = true,
+                                nombrePrefill = user?.displayName ?: ""
+                            )
+                        }
+                        _uiState.update { AuthUiState(needsProfile = true) }
+                    } else {
+                        _uiState.update { AuthUiState(isSuccess = true) }
+                    }
+                },
+                onFailure = { e ->
+                    _uiState.update { AuthUiState(error = e.localizedMessage ?: "Error con Facebook") }
+                }
+            )
+        }
+    }
+
+    fun setError(message: String) {
+        _uiState.update { AuthUiState(error = message) }
     }
 
     fun clearError() = _uiState.update { it.copy(error = null) }

@@ -33,6 +33,7 @@ fun RegistroPaso1Screen(
     var confirmVisible by remember { mutableStateOf(false) }
     var selectedRol by remember { mutableStateOf(RolUsuario.ALUMNO) }
     var passwordError by remember { mutableStateOf<String?>(null) }
+    val form by viewModel.registerForm.collectAsState()
 
     Column(
         modifier = Modifier
@@ -79,71 +80,89 @@ fun RegistroPaso1Screen(
 
         Spacer(Modifier.height(20.dp))
 
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Correo electrónico") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            modifier = Modifier.fillMaxWidth()
-        )
+        // En OAuth el correo viene del proveedor (Google/Facebook) y no se edita.
+        // En registro normal se captura email + contraseña.
+        if (form.isOAuth) {
+            OutlinedTextField(
+                value = form.email,
+                onValueChange = {},
+                label = { Text("Correo electrónico") },
+                readOnly = true,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else {
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Correo electrónico") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it; passwordError = null },
+                label = { Text("Contraseña") },
+                singleLine = true,
+                visualTransformation = if (passwordVisible) VisualTransformation.None
+                else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = null
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
 
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it; passwordError = null },
-            label = { Text("Contraseña") },
-            singleLine = true,
-            visualTransformation = if (passwordVisible) VisualTransformation.None
-            else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = null
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        OutlinedTextField(
-            value = confirmPassword,
-            onValueChange = { confirmPassword = it; passwordError = null },
-            label = { Text("Confirmar contraseña") },
-            singleLine = true,
-            isError = passwordError != null,
-            supportingText = passwordError?.let { msg -> { Text(msg) } },
-            visualTransformation = if (confirmVisible) VisualTransformation.None
-            else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { confirmVisible = !confirmVisible }) {
-                    Icon(
-                        imageVector = if (confirmVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = null
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it; passwordError = null },
+                label = { Text("Confirmar contraseña") },
+                singleLine = true,
+                isError = passwordError != null,
+                supportingText = passwordError?.let { msg -> { Text(msg) } },
+                visualTransformation = if (confirmVisible) VisualTransformation.None
+                else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { confirmVisible = !confirmVisible }) {
+                        Icon(
+                            imageVector = if (confirmVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = null
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
         Spacer(Modifier.height(24.dp))
 
         Button(
             onClick = {
-                when {
-                    password.length < 6 -> passwordError = "Mínimo 6 caracteres"
-                    password != confirmPassword -> passwordError = "Las contraseñas no coinciden"
-                    else -> {
-                        viewModel.saveStep1(email.trim(), password, selectedRol)
-                        navController.navigate(Screen.RegistroPaso2.route)
+                if (form.isOAuth) {
+                    // Ya está autenticado, solo guardamos el rol
+                    viewModel.saveStep1(form.email, "", selectedRol)
+                    navController.navigate(Screen.RegistroPaso2.route)
+                } else {
+                    when {
+                        password.length < 6        -> passwordError = "Mínimo 6 caracteres"
+                        password != confirmPassword -> passwordError = "Las contraseñas no coinciden"
+                        else -> {
+                            viewModel.saveStep1(email.trim(), password, selectedRol)
+                            navController.navigate(Screen.RegistroPaso2.route)
+                        }
                     }
                 }
             },
-            enabled = email.isNotBlank() && password.isNotBlank() && confirmPassword.isNotBlank(),
+            enabled = if (form.isOAuth) true
+            else email.isNotBlank() && password.isNotBlank() && confirmPassword.isNotBlank(),
             modifier = Modifier.fillMaxWidth().height(48.dp),
             shape = MaterialTheme.shapes.extraLarge
         ) {

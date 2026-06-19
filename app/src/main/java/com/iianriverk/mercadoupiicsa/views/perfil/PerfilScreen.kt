@@ -1,5 +1,6 @@
 package com.iianriverk.mercadoupiicsa.views.perfil
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -12,6 +13,9 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,12 +96,21 @@ fun PerfilScreen(
                     Spacer(Modifier.height(24.dp))
 
                     // ── Avatar ────────────────────────────────
-                    Surface(
-                        modifier = Modifier.size(88.dp),
-                        shape    = CircleShape,
-                        color    = MaterialTheme.colorScheme.primaryContainer
+                    Box(
+                        modifier = Modifier
+                            .size(88.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
+                        if (perfil.fotoPerfilUrl.isNotBlank()) {
+                            AsyncImage(
+                                model              = perfil.fotoPerfilUrl,
+                                contentDescription = "Foto de perfil",
+                                contentScale       = ContentScale.Crop,
+                                modifier           = Modifier.fillMaxSize()
+                            )
+                        } else {
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = null,
@@ -138,6 +151,20 @@ fun PerfilScreen(
                     // ── Datos del negocio (solo Vendedor) ─────
                     if (esVendedor) {
                         Spacer(Modifier.height(16.dp))
+
+                        if (perfil.fotoNegocioUrl.isNotBlank()) {
+                            AsyncImage(
+                                model              = perfil.fotoNegocioUrl,
+                                contentDescription = "Foto del negocio",
+                                contentScale       = ContentScale.Crop,
+                                modifier           = Modifier
+                                    .fillMaxWidth()
+                                    .height(140.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                            )
+                            Spacer(Modifier.height(12.dp))
+                        }
+
                         SeccionPerfil(titulo = "Datos del negocio") {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,

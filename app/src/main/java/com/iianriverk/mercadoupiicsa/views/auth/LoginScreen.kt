@@ -1,5 +1,9 @@
 package com.iianriverk.mercadoupiicsa.views.auth
 
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,6 +22,11 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
 import com.iianriverk.mercadoupiicsa.navigation.Screen
 import com.iianriverk.mercadoupiicsa.viewModels.AuthViewModel
 
@@ -31,6 +40,36 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    val activity = LocalActivity.current as? ComponentActivity
+
+    val callbackManager = remember { CallbackManager.Factory.create() }
+
+    DisposableEffect(Unit) {
+        LoginManager.getInstance().registerCallback(
+            callbackManager,
+            object : FacebookCallback<LoginResult> {
+                override fun onSuccess(result: LoginResult) {
+                    viewModel.signInWithFacebook(result.accessToken)
+                }
+                override fun onCancel() { }
+                override fun onError(error: FacebookException) {
+                    viewModel.setError("Error de Facebook: ${error.localizedMessage}")
+                }
+            }
+        )
+        onDispose { LoginManager.getInstance().unregisterCallback(callbackManager) }
+    }
+
+    val facebookLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        callbackManager.onActivityResult(
+            com.facebook.FacebookSdk.getCallbackRequestCodeOffset(),
+            result.resultCode,
+            result.data
+        )
+    }
+
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             navController.navigate(Screen.Feed.route) {
@@ -39,6 +78,17 @@ fun LoginScreen(
             viewModel.resetState()
         }
     }
+
+    // OAuth (Google/Facebook) sin perfil en Firestore: completar registro.
+    // Los datos del proveedor (email, nombre) ya quedaron en registerForm.
+    LaunchedEffect(uiState.needsProfile) {
+        if (uiState.needsProfile) {
+            navController.navigate(Screen.RegistroPaso1.route)
+            viewModel.resetState()
+        }
+    }
+
+
 
     Column(
         modifier = Modifier
@@ -164,19 +214,18 @@ fun LoginScreen(
         Spacer(Modifier.height(16.dp))
 
         OutlinedButton(
-            onClick = { /* TODO: Google Sign-In */ },
+            onClick = {
+                activity?.let {
+                    LoginManager.getInstance().logInWithReadPermissions(
+                        it,
+                        callbackManager,
+                        listOf("email", "public_profile")
+                    )
+                }
+            },
+            enabled  = !uiState.isLoading,
             modifier = Modifier.fillMaxWidth().height(48.dp),
-            shape = MaterialTheme.shapes.extraLarge
-        ) {
-            Text("G   Continuar con Google")
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        OutlinedButton(
-            onClick = { /* TODO: Facebook Sign-In */ },
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-            shape = MaterialTheme.shapes.extraLarge
+            shape    = MaterialTheme.shapes.extraLarge
         ) {
             Text("f   Continuar con Facebook")
         }

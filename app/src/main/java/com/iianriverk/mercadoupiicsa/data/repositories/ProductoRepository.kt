@@ -48,9 +48,13 @@ class ProductoRepository {
         }
     }
 
+    fun generarId(): String = collection.document().id
+
     suspend fun agregarProducto(producto: Producto): Result<Unit> {
         return try {
-            collection.add(producto.toMap()).await()
+            val docRef = if (producto.idProducto.isBlank()) collection.document()
+                         else collection.document(producto.idProducto)
+            docRef.set(producto.toMap()).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("PRODUCTO_REPO", "agregar: ${e.localizedMessage}")
